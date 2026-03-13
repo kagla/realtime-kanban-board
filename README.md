@@ -18,17 +18,18 @@ Laravel 12 기반 실시간 칸반 보드 애플리케이션. Laravel Reverb를 
 - **Backend**: PHP 8.4, Laravel 12
 - **Frontend**: Blade, Tailwind CSS, Alpine.js
 - **WebSocket**: Laravel Reverb
-- **Database**: SQLite (개발) / MySQL 8.0 (프로덕션)
+- **Database**: SQLite
 - **Cache & Queue**: Redis
 - **Search**: Laravel Scout (Database Driver)
+- **Build**: Node.js, Vite
 
 ## 요구 사항
 
 - PHP 8.4+
 - Composer 2.x
-- Node.js 18+
+- Node.js 18+ (Vite 빌드용)
 - Redis 7+
-- MySQL 8.0+ (프로덕션) 또는 SQLite (개발)
+- SQLite 3
 
 ## 로컬 설치
 
@@ -314,7 +315,7 @@ BoardMember
 
 1. `.env` 설정: `APP_ENV=production`, `APP_DEBUG=false`
 2. `APP_KEY` 생성: `php artisan key:generate`
-3. MySQL 데이터베이스 설정
+3. 데이터베이스 설정 (SQLite 또는 MySQL)
 4. Redis 서버 설정
 5. `composer install --no-dev --optimize-autoloader`
 6. `npm ci && npm run build`
