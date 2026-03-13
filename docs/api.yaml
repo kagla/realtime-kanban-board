@@ -1,0 +1,512 @@
+openapi: 3.0.3
+info:
+  title: Realtime Kanban Board API
+  description: Laravel 12 기반 실시간 칸반 보드 REST API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+
+tags:
+  - name: Columns
+    description: 컬럼 관리
+  - name: Cards
+    description: 카드 관리
+  - name: Comments
+    description: 카드 댓글
+  - name: Members
+    description: 보드 멤버 관리
+  - name: Search
+    description: 검색 & 필터
+  - name: Notifications
+    description: 알림
+  - name: Activities
+    description: 활동 로그
+
+paths:
+  /api/boards/{boardId}/columns:
+    post:
+      tags: [Columns]
+      summary: 컬럼 생성
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  example: "To Do"
+      responses:
+        '201':
+          description: 컬럼 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: 권한 없음
+
+  /api/boards/{boardId}/columns/{columnId}:
+    put:
+      tags: [Columns]
+      summary: 컬럼 수정
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/columnId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+      responses:
+        '200':
+          description: 수정 성공
+    delete:
+      tags: [Columns]
+      summary: 컬럼 삭제
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/columnId'
+      responses:
+        '200':
+          description: 삭제 성공
+
+  /api/boards/{boardId}/columns/{columnId}/cards:
+    post:
+      tags: [Cards]
+      summary: 카드 생성
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/columnId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, priority]
+              properties:
+                title:
+                  type: string
+                  example: "새 카드"
+                description:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                assigned_user_id:
+                  type: integer
+                  nullable: true
+                due_date:
+                  type: string
+                  format: date
+                  nullable: true
+      responses:
+        '201':
+          description: 카드 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+
+  /api/boards/{boardId}/cards/{cardId}:
+    put:
+      tags: [Cards]
+      summary: 카드 수정
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/cardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                assigned_user_id:
+                  type: integer
+                  nullable: true
+                due_date:
+                  type: string
+                  format: date
+                  nullable: true
+      responses:
+        '200':
+          description: 수정 성공
+    delete:
+      tags: [Cards]
+      summary: 카드 삭제
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/cardId'
+      responses:
+        '200':
+          description: 삭제 성공
+
+  /api/boards/{boardId}/cards/{cardId}/move:
+    post:
+      tags: [Cards]
+      summary: 카드 이동
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/cardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [column_id, position]
+              properties:
+                column_id:
+                  type: integer
+                  description: 이동 대상 컬럼 ID
+                position:
+                  type: integer
+                  description: 새 위치 (0-based)
+      responses:
+        '200':
+          description: 이동 성공
+
+  /api/boards/{boardId}/cards/{cardId}/comments:
+    get:
+      tags: [Comments]
+      summary: 댓글 목록
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/cardId'
+      responses:
+        '200':
+          description: 댓글 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Comment'
+    post:
+      tags: [Comments]
+      summary: 댓글 작성
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/cardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  example: "댓글 내용"
+      responses:
+        '201':
+          description: 댓글 작성 성공
+
+  /api/boards/{boardId}/cards/{cardId}/comments/{commentId}:
+    delete:
+      tags: [Comments]
+      summary: 댓글 삭제
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - $ref: '#/components/parameters/cardId'
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 삭제 성공
+
+  /api/boards/{boardId}/members:
+    get:
+      tags: [Members]
+      summary: 멤버 목록
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+      responses:
+        '200':
+          description: 멤버 목록
+    post:
+      tags: [Members]
+      summary: 멤버 추가 (Owner만)
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, role]
+              properties:
+                user_id:
+                  type: integer
+                role:
+                  type: string
+                  enum: [editor, viewer]
+      responses:
+        '201':
+          description: 멤버 추가 성공
+
+  /api/boards/{boardId}/members/search-users:
+    get:
+      tags: [Members]
+      summary: 사용자 검색
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 검색어 (이메일 또는 이름, 최소 2자)
+      responses:
+        '200':
+          description: 검색 결과
+
+  /api/boards/{boardId}/members/{memberId}:
+    put:
+      tags: [Members]
+      summary: 멤버 역할 변경
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [editor, viewer]
+      responses:
+        '200':
+          description: 역할 변경 성공
+    delete:
+      tags: [Members]
+      summary: 멤버 제거
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 제거 성공
+
+  /api/boards/{boardId}/search:
+    get:
+      tags: [Search]
+      summary: 카드 검색 (Scout)
+      description: Rate limit 30 req/min
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 검색어
+      responses:
+        '200':
+          description: 검색 결과
+
+  /api/boards/{boardId}/filter:
+    get:
+      tags: [Search]
+      summary: 카드 필터링
+      description: Rate limit 30 req/min
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - name: assigned_user_id
+          in: query
+          schema:
+            type: integer
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: due_filter
+          in: query
+          schema:
+            type: string
+            enum: [today, this_week, overdue]
+      responses:
+        '200':
+          description: 필터 결과
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: 알림 목록 (최근 20개)
+      responses:
+        '200':
+          description: 알림 목록
+
+  /api/notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: 알림 읽음 처리
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 읽음 처리 성공
+
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: 전체 알림 읽음 처리
+      responses:
+        '200':
+          description: 전체 읽음 처리 성공
+
+  /api/boards/{boardId}/activities:
+    get:
+      tags: [Activities]
+      summary: 활동 로그
+      parameters:
+        - $ref: '#/components/parameters/boardId'
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: 커서 기반 페이지네이션
+      responses:
+        '200':
+          description: 활동 로그 목록
+
+components:
+  parameters:
+    boardId:
+      name: boardId
+      in: path
+      required: true
+      schema:
+        type: integer
+    columnId:
+      name: columnId
+      in: path
+      required: true
+      schema:
+        type: integer
+    cardId:
+      name: cardId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+
+    CardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Card'
+
+    Card:
+      type: object
+      properties:
+        id:
+          type: integer
+        column_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        position:
+          type: integer
+        assigned_user_id:
+          type: integer
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        card_id:
+          type: integer
+        user_id:
+          type: integer
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
